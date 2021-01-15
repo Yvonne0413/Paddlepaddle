@@ -22,10 +22,12 @@ import re
 import shutil
 import tempfile
 
+import numpy as np
 import paddle
 from paddle.static import load_program_state
 
 from ppcls.utils import logger
+import paddle.fluid as fluid
 
 __all__ = ['init_model', 'save_model', 'load_dygraph_pretrain']
 
@@ -66,8 +68,23 @@ def load_dygraph_pretrain(model, path=None, load_static_weights=False):
         return
 
     param_state_dict = paddle.load(path + ".pdparams")
+    state = fluid.io.load_program_state(path + ".pdparams")
     model.set_dict(param_state_dict)
-    return
+    print("parameters of paddle", type(state), len(state))   # dict 1628
+    
+    filename = open('./output/hrnet_parameter.txt','w')
+    i = 0
+    for key, value in state.items():
+        filename.write("\n")
+        if type(value) is np.ndarray:
+            filename.write("key{}-".format(i) + key + "  :({})".format(value.shape))
+        else:
+            filename.write("key{}-".format(i) + key + "  :" + str(value))
+        filename.write("\n")
+        i += 1
+    filename.close()
+    # print(state.keys())
+    return state
 
 
 def load_distillation_model(model, pretrained_model, load_static_weights):
